@@ -2,11 +2,19 @@ import { useWorkouts } from "@/hooks/use-workouts";
 import { NextWorkout } from "@/components/NextWorkout";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { WorkoutReference } from "@/components/WorkoutReference";
-import { Activity } from "lucide-react";
+import { Activity, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { useState } from "react";
 import type { WorkoutType } from "@/lib/constants";
 
 export default function Home() {
   const { data: workouts, isLoading, isError } = useWorkouts();
+  const [isRefOpen, setIsRefOpen] = useState(false);
 
   // Logic to determine next workout
   let nextType: WorkoutType = 'A';
@@ -59,7 +67,23 @@ export default function Home() {
         </section>
 
         {/* Workout Reference Section */}
-        <WorkoutReference />
+        <section>
+          <Collapsible open={isRefOpen} onOpenChange={setIsRefOpen}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-8 rounded-3xl border border-dashed border-border/50"
+              >
+                <Info size={16} />
+                {isRefOpen ? "Hide" : "Show"} Workout Reference
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-8">
+              <WorkoutReference />
+            </CollapsibleContent>
+          </Collapsible>
+        </section>
 
         {/* History Section */}
         <section>
