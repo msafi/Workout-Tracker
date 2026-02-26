@@ -1,6 +1,7 @@
 import { useWorkouts } from "@/hooks/use-workouts";
 import { NextWorkout } from "@/components/NextWorkout";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
+import { WorkoutReference } from "@/components/WorkoutReference";
 import { Activity } from "lucide-react";
 import type { WorkoutType } from "@/lib/constants";
 
@@ -56,6 +57,9 @@ export default function Home() {
             <NextWorkout type={nextType} />
           )}
         </section>
+
+        {/* Workout Reference Section */}
+        <WorkoutReference />
 
         {/* History Section */}
         <section>
