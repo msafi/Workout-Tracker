@@ -4,9 +4,10 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-if ("serviceWorker" in navigator) {
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
+    const versionedSwUrl = `${import.meta.env.BASE_URL}sw.js?v=${encodeURIComponent(__APP_VERSION__)}`;
+    navigator.serviceWorker.register(versionedSwUrl).catch(() => {
       // Ignore registration failure to avoid blocking app rendering.
     });
   });

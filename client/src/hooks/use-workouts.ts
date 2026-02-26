@@ -13,6 +13,12 @@ function setStoredWorkouts(workouts: Workout[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts));
 }
 
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}m ${secs.toString().padStart(2, "0")}s`;
+}
+
 export function useWorkouts() {
   return useQuery({
     queryKey: [STORAGE_KEY],
@@ -32,6 +38,7 @@ export function useCreateWorkout() {
       const newWorkout: Workout = {
         id: Math.floor(Math.random() * 1000000),
         type: data.type,
+        durationSeconds: data.durationSeconds,
         completedAt: new Date()
       };
       setStoredWorkouts([newWorkout, ...workouts]);
@@ -41,7 +48,7 @@ export function useCreateWorkout() {
       queryClient.invalidateQueries({ queryKey: [STORAGE_KEY] });
       toast({
         title: "Workout Completed! 🎉",
-        description: `Great job finishing ${data.type === 'A' ? 'Day A (Push)' : data.type === 'B' ? 'Day B (Pull)' : 'Day C (Legs)'}.`,
+        description: `Great job finishing ${data.type === 'A' ? 'Day A (Push)' : data.type === 'B' ? 'Day B (Pull)' : 'Day C (Legs)'} in ${formatDuration(data.durationSeconds)}.`,
       });
     },
     onError: () => {

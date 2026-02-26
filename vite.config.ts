@@ -3,7 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+const appVersion = process.env.GITHUB_SHA ?? new Date().toISOString();
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     runtimeErrorOverlay(),

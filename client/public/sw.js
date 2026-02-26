@@ -1,4 +1,6 @@
-const CACHE_NAME = "workout-tracker-v1";
+const CACHE_PREFIX = "workout-tracker-";
+const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
+const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -13,7 +15,13 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        ),
+      )
       .then(() => self.clients.claim()),
   );
 });

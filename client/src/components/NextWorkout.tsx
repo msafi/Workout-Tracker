@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Dumbbell } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -18,9 +18,56 @@ export function NextWorkout({ type }: NextWorkoutProps) {
   const workout = WORKOUTS[type];
   const createMutation = useCreateWorkout();
   const [isHovered, setIsHovered] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const handleComplete = () => {
-    createMutation.mutate({ type });
+  const isRunning = startedAt !== null;
+
+  useEffect(() => {
+    if (!startedAt) {
+      return;
+    }
+
+    const updateElapsed = () => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    };
+
+    updateElapsed();
+    const intervalId = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [startedAt]);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const handleWorkoutButton = () => {
+    if (!isRunning) {
+      setStartedAt(Date.now());
+      setElapsedSeconds(0);
+      return;
+    }
+
+    if (!startedAt) {
+      return;
+    }
+
+    const durationSeconds = Math.max(
+      1,
+      Math.floor((Date.now() - startedAt) / 1000),
+    );
+
+    createMutation.mutate(
+      { type, durationSeconds },
+      {
+        onSuccess: () => {
+          setStartedAt(null);
+          setElapsedSeconds(0);
+        },
+      },
+    );
   };
 
   return (
@@ -71,8 +118,19 @@ export function NextWorkout({ type }: NextWorkoutProps) {
           ))}
         </div>
 
+        {isRunning ? (
+          <div className="mb-4 text-center">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+              Workout Timer
+            </p>
+            <p className="text-4xl font-bold tracking-tight tabular-nums text-foreground mt-1">
+              {formatDuration(elapsedSeconds)}
+            </p>
+          </div>
+        ) : null}
+
         <button
-          onClick={handleComplete}
+          onClick={handleWorkoutButton}
           disabled={createMutation.isPending}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -95,7 +153,7 @@ export function NextWorkout({ type }: NextWorkoutProps) {
             </span>
           ) : (
             <>
-              Mark as Completed
+              {isRunning ? "Complete Workout" : "Start Workout"}
               <motion.div
                 animate={{ x: isHovered ? 4 : 0 }}
                 transition={{ duration: 0.2 }}
