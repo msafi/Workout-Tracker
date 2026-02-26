@@ -1,16 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
 import type { Workout, InsertWorkout } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
+const STORAGE_KEY = "workout_history";
+
+function getStoredWorkouts(): Workout[] {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+function setStoredWorkouts(workouts: Workout[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts));
+}
+
 export function useWorkouts() {
   return useQuery({
-    queryKey: [api.workouts.list.path],
+    queryKey: [STORAGE_KEY],
     queryFn: async () => {
-      const res = await fetch(api.workouts.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch workouts");
-      const data = await res.json();
-      return data as Workout[];
+      return getStoredWorkouts();
     },
   });
 }
@@ -21,17 +28,17 @@ export function useCreateWorkout() {
 
   return useMutation({
     mutationFn: async (data: InsertWorkout) => {
-      const res = await fetch(api.workouts.create.path, {
-        method: api.workouts.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to log workout");
-      return res.json() as Promise<Workout>;
+      const workouts = getStoredWorkouts();
+      const newWorkout: Workout = {
+        id: Math.floor(Math.random() * 1000000),
+        type: data.type,
+        completedAt: new Date()
+      };
+      setStoredWorkouts([newWorkout, ...workouts]);
+      return newWorkout;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [api.workouts.list.path] });
+      queryClient.invalidateQueries({ queryKey: [STORAGE_KEY] });
       toast({
         title: "Workout Completed! 🎉",
         description: `Great job finishing ${data.type === 'A' ? 'Day A (Push)' : data.type === 'B' ? 'Day B (Pull)' : 'Day C (Legs)'}.`,
@@ -53,15 +60,11 @@ export function useDeleteWorkout() {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      const url = buildUrl(api.workouts.delete.path, { id });
-      const res = await fetch(url, { 
-        method: api.workouts.delete.method, 
-        credentials: "include" 
-      });
-      if (!res.ok) throw new Error("Failed to delete workout");
+      const workouts = getStoredWorkouts();
+      setStoredWorkouts(workouts.filter(w => w.id !== id));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.workouts.list.path] });
+      queryClient.invalidateQueries({ queryKey: [STORAGE_KEY] });
       toast({
         title: "Workout removed",
         description: "History has been updated.",
