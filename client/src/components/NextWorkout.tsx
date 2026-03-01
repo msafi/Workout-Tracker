@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Dumbbell } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -20,6 +20,7 @@ export function NextWorkout({ type }: NextWorkoutProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const isRunning = startedAt !== null;
 
@@ -36,6 +37,62 @@ export function NextWorkout({ type }: NextWorkoutProps) {
     const intervalId = window.setInterval(updateElapsed, 1000);
     return () => window.clearInterval(intervalId);
   }, [startedAt]);
+
+  useEffect(() => {
+    if (!isRunning || !("wakeLock" in navigator)) {
+      if (wakeLockRef.current) {
+        const currentWakeLock = wakeLockRef.current;
+        wakeLockRef.current = null;
+        void currentWakeLock.release();
+      }
+      return;
+    }
+
+    let isDisposed = false;
+
+    const requestWakeLock = async () => {
+      try {
+        const wakeLock = await navigator.wakeLock.request("screen");
+        if (isDisposed) {
+          void wakeLock.release();
+          return;
+        }
+
+        wakeLockRef.current = wakeLock;
+        wakeLock.addEventListener("release", () => {
+          if (wakeLockRef.current === wakeLock) {
+            wakeLockRef.current = null;
+          }
+        });
+      } catch {
+        // Ignore if denied/unsupported; timer continues normally.
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        isRunning &&
+        !wakeLockRef.current
+      ) {
+        void requestWakeLock();
+      }
+    };
+
+    void requestWakeLock();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      isDisposed = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+
+      if (wakeLockRef.current) {
+        const currentWakeLock = wakeLockRef.current;
+        wakeLockRef.current = null;
+        void currentWakeLock.release();
+      }
+    };
+  }, [isRunning]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

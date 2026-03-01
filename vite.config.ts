@@ -1,13 +1,28 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { execSync } from "node:child_process";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const appVersion = process.env.GITHUB_SHA ?? new Date().toISOString();
+function getLatestCommitDateIso() {
+  if (process.env.GITHUB_COMMIT_DATE) {
+    return process.env.GITHUB_COMMIT_DATE;
+  }
+
+  try {
+    return execSync("git log -1 --format=%cI", { encoding: "utf-8" }).trim();
+  } catch {
+    return new Date().toISOString();
+  }
+}
+
+const latestCommitDate = getLatestCommitDateIso();
+const appVersion = process.env.GITHUB_SHA ?? latestCommitDate;
 
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_COMMIT_DATE__: JSON.stringify(latestCommitDate),
   },
   plugins: [
     react(),

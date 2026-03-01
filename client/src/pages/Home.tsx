@@ -15,6 +15,16 @@ import type { WorkoutType } from "@/lib/constants";
 export default function Home() {
   const { data: workouts, isLoading, isError } = useWorkouts();
   const [isRefOpen, setIsRefOpen] = useState(false);
+  const versionDate = new Date(__APP_COMMIT_DATE__);
+  const versionLabel = Number.isNaN(versionDate.getTime())
+    ? __APP_COMMIT_DATE__
+    : new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(versionDate);
 
   // Logic to determine next workout
   let nextType: WorkoutType = 'A';
@@ -98,6 +108,12 @@ export default function Home() {
         </section>
 
       </main>
+
+      <footer className="pb-8 text-center">
+        <p className="text-[11px] text-muted-foreground/70">
+          Version {versionLabel}
+        </p>
+      </footer>
     </div>
   );
 }
